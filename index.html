@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitClub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #cccccc; /* Серый цвет */
+            color: #333;
+        }
+        header {
+            background: linear-gradient(to right, #ADD8E6, #000000);
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .menu-button {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            cursor: pointer;
+            font-size: 24px;
+            color: white;
+        }
+        nav {
+            display: none;
+            position: absolute;
+            right: 20px;
+            top: 50px;
+            background: white;
+            color: black;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            z-index: 100;
+        }
+        nav a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+        nav a:hover {
+            background: #eee;
+        }
+        .hero {
+            background: url('hero-image.jpg') no-repeat center center/cover;
+            height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5); /* Полупрозрачный черный оверлей */
+            z-index: 1;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+        }
+        .hero h1 {
+            font-size: 48px;
+            margin: 0;
+        }
+        .hero p {
+            font-size: 24px;
+            margin: 10px 0 30px 0;
+        }
+        .section {
+            padding: 30px;
+            margin: 20px;
+            background: white;
+            color: black;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .stat {
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            width: 30%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: white;
+            margin: 10px 0;
+        }
+        .stat h3 {
+            margin: 10px 0;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #cccccc; /* Серый цвет */
+            color: black;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+        .button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        .button:hover {
+            background-color: #218838;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        form label {
+            margin: 10px 0 5px;
+        }
+        form input, form textarea {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .service, .trainer {
+            margin-bottom: 20px;
+        }
+        .service h3, .trainer h4 {
+            color: #004080;
+        }
+        .contact-form {
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .service-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .service-card:hover {
+            transform: translateY(-10px);
+        }
+        .service-card .service-content {
+            padding: 20px;
+        }
+        .service-card h3 {
+            margin-top: 0;
+        }
+        .trainer-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+        }
+        .trainer-card:hover {
+            transform: translateY(-10px);
+        }
+        .trainer-card i {
+            font-size: 48px;
+            margin-right: 20px;
+            color: #004080;
+        }
+        .trainer-card .trainer-content {
+            flex: 1;
+        }
+        .trainer-card h4 {
+            margin-top: 0;
+        }
+        .abonnement-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+        }
+        .abonnement-card:hover {
+            transform: translateY(-10px);
+        }
+        .abonnement-card i {
+            font-size: 48px;
+            margin-right: 20px;
+            color: #004080;
+        }
+        .abonnement-card .abonnement-content {
+            flex: 1;
+        }
+        .abonnement-card h3 {
+            margin-top: 0;
+        }
+        @media (max-width: 768px) {
+            .stats {
+                flex-direction: column;
+                align-items: center;
+            }
+            .stat {
+                width: 80%;
+            }
+            .trainer-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            .trainer-card i {
+                margin-bottom: 20px;
+            }
+            .abonnement-card {
+                flex-direction: column;
+                text-align: center;
+            }
+            .abonnement-card i {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>FitClub</h1>
+    <div class="menu-button" onclick="toggleMenu()">☰</div>
+    <nav id="menu">
+        <a href="#home">Главная</a>
+        <a href="#services">Услуги</a>
+        <a href="#trainers">Тренеры</a>
+        <a href="#abonnements">Абонементы</a>
+        <a href="#contacts">Контакты</a>
+        <a href="#" id="loginLink" onclick="openModal('loginModal')">Войти</a>
+        <a href="#" id="registerLink" onclick="openModal('registerModal')">Регистрация</a>
+        <a href="#" id="logoutLink" onclick="logoutUser()" style="display: none;">Выйти</a>
+    </nav>
+</header>
+
+<div class="hero">
+    <div class="hero-content">
+        <h1>Сделай Своё Тело Сильнее</h1>
+        <p>Мы предлагаем новейшее оборудование, профессиональных тренеров и различные групповые занятия, чтобы помочь вам достичь ваших фитнес-целей.</p>
+        <button class="button" onclick="scrollToAbonnements()">Начать Тренировки</button>
+        <button class="button" onclick="scrollToServices()">Подробнее</button>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <h3>10+ Лет Опыта</h3>
+        <p>Успешно помогаем клиентам достигать их целей</p>
+    </div>
+    <div class="stat">
+        <h3>20+</h3>
+        <p>Профессиональных тренеров готовы помочь вам</p>
+    </div>
+    <div class="stat">
+        <h3>1000+</h3>
+        <p>Довольных клиентов, которые изменили свою жизнь</p>
+    </div>
+</div>
+
+<div class="section" id="services">
+    <h2>Наши Услуги</h2>
+    <p>Мы предлагаем широкий спектр тренировок и программ, разработанных для всех уровней подготовки:</p>
+    <div class="services-grid">
+        <div class="service-card">
+            <div class="service-content">
+                <h3>Силовые Тренировки</h3>
+                <p>Индивидуальные и групповые программы, направленные на развитие силы и наращивание мышечной массы.</p>
+            </div>
+        </div>
+        <div class="service-card">
+            <div class="service-content">
+                <h3>Кардио Тренировки</h3>
+                <p>Разнообразные кардио программы для улучшения выносливости и сжигания калорий.</p>
+            </div>
+        </div>
+        <div class="service-card">
+            <div class="service-content">
+                <h3>Групповые Занятия</h3>
+                <p>Более 20 видов групповых программ: йога, пилатес, зумба, сайкл и многое другое.</p>
+            </div>
+        </div>
+        <div class="service-card">
+            <div class="service-content">
+                <h3>Программы Для Здоровья</h3>
+                <p>Специальные программы для улучшения здоровья, осанки и реабилитации.</p>
+            </div>
+        </div>
+        <div class="service-card">
+            <div class="service-content">
+                <h3>HIIT Тренировки</h3>
+                <p>Высокоинтенсивный интервальный тренинг для быстрого сжигания жира.</p>
+            </div>
+        </div>
+        <div class="service-card">
+            <div class="service-content">
+                <h3>Персональный Тренинг</h3>
+                <p>Индивидуальный подход с учетом ваших целей, уровня подготовки и особенностей здоровья.</p>
+            </div>
+        </div>
+    </div>
+    <button class="button" onclick="scrollToAbonnements()">Посмотреть Все Программы</button>
+</div>
+
+<div class="section" id="trainers">
+    <h2>Наши Тренеры</h2>
+    <p>Познакомьтесь с нашей командой профессиональных и опытных тренеров, которые помогут вам достичь ваших фитнес-целей:</p>
+
+    <div class="trainer-card">
+        <i class="fas fa-dumbbell"></i>
+        <div class="trainer-content">
+            <h4>Алексей Петров</h4>
+            <p>Главный тренер / Силовые тренировки</p>
+            <p>10+ лет опыта</p>
+            <button class="button" onclick="openModal('trainerModal1')">Подробнее</button>
+        </div>
+    </div>
+
+    <div class="trainer-card">
+        <i class="fas fa-yin-yang"></i>
+        <div class="trainer-content">
+            <h4>Елена Смирнова</h4>
+            <p>Тренер по йоге и пилатесу</p>
+            <p>8+ лет опыта</p>
+            <button class="button" onclick="openModal('trainerModal2')">Подробнее</button>
+        </div>
+    </div>
+
+    <div class="trainer-card">
+        <i class="fas fa-running"></i>
+        <div class="trainer-content">
+            <h4>Дмитрий Васильев</h4>
+            <p>Тренер по функциональному тренингу</p>
+            <p>6+ лет опыта</p>
+            <button class="button" onclick="openModal('trainerModal3')">Подробнее</button>
+        </div>
+    </div>
+
+    <div class="trainer-card">
+        <i class="fas fa-users"></i>
+        <div class="trainer-content">
+            <h4>Марина Козлова</h4>
+            <p>Тренер по групповым программам</p>
+            <p>7+ лет опыта</p>
+            <button class="button" onclick="openModal('trainerModal4')">Подробнее</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для тренера 1 -->
+<div id="trainerModal1" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('trainerModal1')">&times;</span>
+        <h2>Алексей Петров</h2>
+        <p><strong>Специализация:</strong> Главный тренер / Силовые тренировки</p>
+        <p><strong>Опыт:</strong> 10+ лет</p>
+        <p><strong>Описание:</strong> Алексей Петров имеет более 10 лет опыта в области силовых тренировок. Он специализируется на индивидуальных и групповых программах, направленных на развитие силы и наращивание мышечной массы. Алексей помогает клиентам достигать их целей, используя передовые методы тренировок и индивидуальный подход.</p>
+    </div>
+</div>
+
+<!-- Модальное окно для тренера 2 -->
+<div id="trainerModal2" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('trainerModal2')">&times;</span>
+        <h2>Елена Смирнова</h2>
+        <p><strong>Специализация:</strong> Тренер по йоге и пилатесу</p>
+        <p><strong>Опыт:</strong> 8+ лет</p>
+        <p><strong>Описание:</strong> Елена Смирнова имеет более 8 лет опыта в преподавании йоги и пилатеса. Она помогает клиентам улучшить гибкость, укрепить мышцы и достичь внутреннего равновесия через регулярные занятия.</p>
+    </div>
+</div>
+
+<!-- Модальное окно для тренера 3 -->
+<div id="trainerModal3" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('trainerModal3')">&times;</span>
+        <h2>Дмитрий Васильев</h2>
+        <p><strong>Специализация:</strong> Тренер по функциональному тренингу</p>
+        <p><strong>Опыт:</strong> 6+ лет</p>
+        <p><strong>Описание:</strong> Дмитрий Васильев специализируется на функциональном тренинге, который включает в себя упражнения, имитирующие естественные движения. Он помогает клиентам улучшить общую физическую подготовку и предотвратить травмы.</p>
+    </div>
+</div>
+
+<!-- Модальное окно для тренера 4 -->
+<div id="trainerModal4" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('trainerModal4')">&times;</span>
+        <h2>Марина Козлова</h2>
+        <p><strong>Специализация:</strong> Тренер по групповым программам</p>
+        <p><strong>Опыт:</strong> 7+ лет</p>
+        <p><strong>Описание:</strong> Марина Козлова проводит более 20 видов групповых программ, включая йогу, пилатес, зумбу и сайкл. Она помогает клиентам найти мотивацию и достигать своих фитнес-целей в дружеской атмосфере.</p>
+    </div>
+</div>
+
+<div class="section" id="abonnements">
+    <h2>Абонементы</h2>
+    <p>Выберите абонемент, который лучше всего соответствует вашим целям и возможностям:</p>
+
+    <div class="abonnement-card">
+        <i class="fas fa-check-circle"></i>
+        <div class="abonnement-content">
+            <h3>Базовый</h3>
+            <p>₽3,500 / в месяц</p>
+            <ul>
+                <li>Доступ к тренажерному залу</li>
+                <li>Доступ в зал с 8:00 до 22:00</li>
+                <li>Базовые групповые занятия</li>
+                <li>Шкафчик для вещей</li>
+                <li>Консультация с тренером (1 раз)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="abonnement-card">
+        <i class="fas fa-star"></i>
+        <div class="abonnement-content">
+            <h3>Стандарт</h3>
+            <p>₽5,900 / в месяц</p>
+            <ul>
+                <li>Все включено в Базовый план</li>
+                <li>Доступ к бассейну</li>
+                <li>Все групповые занятия</li>
+                <li>2 персональные тренировки</li>
+                <li>Составление программы питания</li>
+                <li>Доступ к фитнес-приложению</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="abonnement-card">
+        <i class="fas fa-crown"></i>
+        <div class="abonnement-content">
+            <h3>Премиум</h3>
+            <p>₽9,900 / в месяц</p>
+            <ul>
+                <li>Все включено в Стандарт план</li>
+                <li>5 персональных тренировок</li>
+                <li>Спа и сауна без ограничений</li>
+                <li>Приоритетная запись на занятия</li>
+                <li>Индивидуальное сопровождение</li>
+                <li>VIP зона отдыха</li>
+                <li>Питание (обед) включено</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="section contact-form" id="register">
+    <h2>Запись на тренировки</h2>
+    <form>
+        <label for="name">Имя:</label>
+        <input type="text" id="name" required>
+
+        <label for="surname">Фамилия:</label>
+        <input type="text" id="surname" required>
+
+        <label for="phone">Телефон:</label>
+        <input type="tel" id="phone" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" required>
+
+        <button type="submit" class="button">Отправить</button>
+    </form>
+</div>
+
+<div class="section" id="contacts" style="background-color: #f4f4f4;">
+    <h2>Свяжитесь с Нами</h2>
+    <p>У вас есть вопросы? Мы будем рады помочь вам и ответить на все ваши вопросы.</p>
+
+    <h3>Информация</h3>
+    <p><i class="fas fa-map-marker-alt"></i> Адрес: г. Москва, ул. Фитнеса, д. 123</p>
+    <h3>Часы работы</h3>
+    <p><i class="fas fa-clock"></i> Пн-Пт: 6:00 - 23:00</p>
+    <p><i class="fas fa-clock"></i> Сб-Вс: 8:00 - 22:00</p>
+
+    <h3>Контакты</h3>
+    <p><i class="fas fa-phone-alt"></i> Телефон: +7 (123) 456-78-90</p>
+    <p><i class="fas fa-envelope"></i> Email: info@fitclub.ru</p>
+
+    <h3>Отправить Сообщение</h3>
+    <form>
+        <label for="contact-name">Имя:</label>
+        <input type="text" id="contact-name" required placeholder="Ваше имя">
+
+        <label for="contact-email">Email:</label>
+        <input type="email" id="contact-email" required placeholder="Ваш email">
+
+        <label for="contact-phone">Телефон:</label>
+        <input type="tel" id="contact-phone" required placeholder="+7 (___) ___-__-__">
+
+        <label for="subject">Тема:</label>
+        <input type="text" id="subject" required placeholder="Тема сообщения">
+
+        <label for="message">Сообщение:</label>
+        <textarea id="message" required placeholder="Ваше сообщение"></textarea>
+
+        <button type="submit" class="button">Отправить Сообщение</button>
+    </form>
+</div>
+
+<!-- Модальное окно для входа -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('loginModal')">&times;</span>
+        <h2>Вход</h2>
+        <!-- Форма входа -->
+        <form id="loginForm">
+            <label for="loginEmail">Email:</label>
+            <input type="email" id="loginEmail" required>
+            <label for="loginPassword">Пароль:</label>
+            <input type="password" id="loginPassword" required>
+            <button type="submit" class="button">Войти</button>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для регистрации -->
+<div id="registerModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('registerModal')">&times;</span>
+        <h2>Регистрация</h2>
+        <!-- Форма регистрации -->
+        <form id="registerForm">
+            <label for="registerEmail">Email:</label>
+            <input type="email" id="registerEmail" required>
+            <label for="registerPassword">Пароль:</label>
+            <input type="password" id="registerPassword" required>
+            <button type="submit" class="button">Зарегистрироваться</button>
+        </form>
+    </div>
+</div>
+
+<footer>
+    <div class="section" id="contacts-info" style="background-color: #cccccc;">
+        <h2>Свяжитесь с Нами</h2>
+        <p>У вас есть вопросы? Мы будем рады помочь вам и ответить на все ваши вопросы.</p>
+
+        <h3>Информация</h3>
+        <p><i class="fas fa-map-marker-alt"></i> Адрес: г. Москва, ул. Фитнеса, д. 123</p>
+        <h3>Часы работы</h3>
+        <p><i class="fas fa-clock"></i> Пн-Пт: 6:00 - 23:00</p>
+        <p><i class="fas fa-clock"></i> Сб-Вс: 8:00 - 22:00</p>
+
+        <h3>Контакты</h3>
+        <p><i class="fas fa-phone-alt"></i> Телефон: +7 (123) 456-78-90</p>
+        <p><i class="fas fa-envelope"></i> Email: info@fitclub.ru</p>
+    </div>
+
+    <p>© 2023 FitClub. Все права защищены.</p>
+</footer>
+
+<script>
+    // Ваша конфигурация Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDB9JHDb9qDx_dmvZKshlJJUf8fM0GYT3A",
+        authDomain: "fitnes-klub.firebaseapp.com",
+        databaseURL: "https://fitnes-klub-default-rtdb.firebaseio.com",
+        projectId: "fitnes-klub",
+        storageBucket: "fitnes-klub.appspot.com",
+        messagingSenderId: "965217481320",
+        appId: "1:965217481320:web:8b8a9b4edefdc2e129c1dd"
+    };
+
+    // Инициализация Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    // Функция для регистрации нового пользователя
+    async function registerUser(email, password) {
+        try {
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            alert('Регистрация успешна!');
+            // Добавление данных в Firestore
+            const usersRef = database.ref('Registration');
+            usersRef.push({
+                email: email,
+                uid: userCredential.user.uid // Сохраняем UID пользователя
+            });
+        } catch (error) {
+            alert('Ошибка регистрации: ' + error.message);
+        }
+    }
+
+    // Функция для входа пользователя
+    async function loginUser(email, password) {
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            alert('Вход успешен!');
+            updateUIForLoggedInUser();
+        } catch (error) {
+            alert('Ошибка входа: ' + error.message);
+        }
+    }
+
+    // Функция для выхода пользователя
+    function logoutUser() {
+        auth.signOut().then(() => {
+            alert('Выход выполнен!');
+            updateUIForLoggedOutUser();
+        }).catch((error) => {
+            alert('Ошибка выхода: ' + error.message);
+        });
+    }
+
+    // Обновление интерфейса для вошедшего пользователя
+    function updateUIForLoggedInUser() {
+        document.getElementById('loginLink').style.display = 'none';
+        document.getElementById('registerLink').style.display = 'none';
+        document.getElementById('logoutLink').style.display = 'block';
+    }
+
+    // Обновление интерфейса для вышедшего пользователя
+    function updateUIForLoggedOutUser() {
+        document.getElementById('loginLink').style.display = 'block';
+        document.getElementById('registerLink').style.display = 'block';
+        document.getElementById('logoutLink').style.display = 'none';
+    }
+
+    // Обработчики событий для форм
+    document.getElementById('registerForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        if (validateEmail(email) && validatePassword(password)) {
+            registerUser(email, password);
+        }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        if (validateEmail(email) && validatePassword(password)) {
+            loginUser(email, password);
+        }
+    });
+
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!re.test(email)) {
+            alert('Некорректный формат email');
+            return false;
+        }
+        return true;
+    }
+
+    function validatePassword(password) {
+        if (password.length < 6) {
+            alert('Пароль должен содержать не менее 6 символов');
+            return false;
+        }
+        return true;
+    }
+
+    function toggleMenu() {
+        const menu = document.getElementById('menu');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function showForm() {
+        document.getElementById('register').style.display = 'block';
+    }
+
+    function scrollToAbonnements() {
+        document.getElementById('abonnements').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function scrollToServices() {
+        document.getElementById('services').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function selectPlan(planName) {
+        alert(`Вы выбрали план: ${planName}`);
+        // Здесь можно добавить дополнительную логику для обработки выбора плана
+    }
+
+    window.onclick = function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+
+    // Проверка состояния аутентификации при загрузке страницы
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            updateUIForLoggedInUser();
+        } else {
+            updateUIForLoggedOutUser();
+        }
+    });
+</script>
+
+</body>
+</html>
